@@ -1,10 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Net;
+using System.Text;
+using MySql.Data.MySqlClient;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using VkNet;
 using VkNet.Enums;
 using VkNet.Enums.Filters;
 using VkNet.Enums.SafetyEnums;
 using VkNet.Model;
+using VkNet.Model.Attachments;
 using VkNet.Model.RequestParams;
 using VkNet.Utils;
 
@@ -13,53 +20,67 @@ namespace VkBot
     class Program
     {
         static VkApi vkapi = new VkApi();
-        static string[] Commands = { "хочу кушоть", "хочу поделиться", "hello" };
+        static string[] Commands = { "хочу кушоть", "хочу поделиться", "забрал еду", "команды" };
 
-        static void Main(string[] args)
+	    enum AveliableCommans
+	    {
+		    Eat = 0,
+		    Share,
+		    Took,
+		    Commands
+	    }
+	    private static MySqlConnection BDConnection;
+		#region BD
+
+		class DBMySQLUtils
+		{
+			public static MySqlConnection
+				GetDBConnection(string host, int port, string database, string username, string password)
+			{
+				// Connection String.
+				String connString = "Server=" + host + ";Database=" + database
+				                    + ";port=" + port + ";User Id=" + username + ";password=" + password;
+
+				MySqlConnection conn = new MySqlConnection(connString);
+
+				return conn;
+			}
+			}
+
+		class DBUtils
+	    {
+
+		    public static MySqlConnection GetDBConnection()
+	    {
+		    string host = "192.168.205.130";
+		    int port = 3306;
+		    string database = "simplehr";
+		    string username = "root";
+		    string password = "1234";
+
+		    return DBMySQLUtils.GetDBConnection(host, port, database, username, password);
+	    }
+
+    }
+
+	#endregion
+
+	static void Main(string[] args)
         {
             string Login = @"codemekh@gmail.com";
             string Password = @"rhbpbcrfgen";
             ulong ID = 6768611;
 
-            /*Console.WriteLine("Montece VK bot");
+			
+			/*Console.WriteLine("Montece VK bot");
             Console.Write("Login: ");
             Login = Console.ReadLine();
             Console.Write("Password: ");
             Password = Console.ReadLine();
             Console.Write("App ID: ");
             ID = ulong.Parse(Console.ReadLine());*/
-            Console.WriteLine("Auth started...");
-			//if (Auth(Login, Password, ID))
-			//{
-			//    Console.WriteLine("Auth completed.");
-			//    var Friends = GetFriends();
-			//    User I = vkapi.Users.Get(vkapi.UserId.Value);
-			//    Console.WriteLine("-1:" + I.FirstName + " " + I.LastName);
-			//    for (int i = 0; i < Friends.Count; i++)
-			//    {
-			//        Console.WriteLine(i + ":" + Friends[i].FirstName + " " + Friends[i].LastName);
-			//    }
-			//    Console.Write("Введите номер друга: ");
-			//    int number = int.Parse(Console.ReadLine());
-			//    while (number > Friends.Count && number != -1)
-			//    {
-			//        Console.WriteLine("Неверный номер!");
-			//        Console.Write("Введите номер друга: ");
-			//        number = int.Parse(Console.ReadLine());
-			//    }
-			//    if (number == -1)
-			//    {
-			//        Console.WriteLine("Выбраны вы: " + I.FirstName + " " + I.LastName);
-			//        CheckMessages(I.Id);
-			//    }else
-			//    {
-			//        Console.WriteLine("Выбран друг: " + Friends[number].FirstName + " " + Friends[number].LastName);
-			//        CheckMessages(Friends[number].Id);
-			//    }
-
-			//    Console.WriteLine("Нажмите ENTER чтобы продолжить...");
-			//    Console.ReadLine();
-			//}
+			Console.WriteLine("Auth started...");
+			
 	        if (Auth(Login, Password, ID))
 	        {
 		        Console.WriteLine("Auth completed.");
@@ -85,6 +106,7 @@ namespace VkBot
 					}
 		        }
 	        }
+
         }
 
         static bool Auth(string Login, string Password, ulong ID)
@@ -141,16 +163,17 @@ namespace VkBot
 
 	        switch (CommandID)
 	        {
-		        case 0:
+		        case (int)AveliableCommans.Eat:
 			        SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
 			        GetSpotsFromCity(CheckedUserID,
 				        vkapi.Messages.GetHistory(
 					        new MessagesGetHistoryParams { UserId = CheckedUserID, Count = 5 }));
 			        break;
-		        case 1: 
+		        case (int)AveliableCommans.Share: 
+
 			        break;
-		        case 2:
-			        SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
+		        case (int)AveliableCommans.Took:
+			        
 			        break;
 		        default: /*Error*/ break;
 	        }
@@ -159,11 +182,36 @@ namespace VkBot
 	    private static void GetSpotsFromCity(long CheckedUserID, MessagesGetObject dialog)
 	    {
 		    string city = dialog.Messages[0].Body;
-			List<Spot> spotList = new List<Spot>();
-			//TODO: заполнить список точек из БД, выбирая по нужному городу.
-			//SendMessage(CheckedUserID,);
+		    List<Spot> spotList = GetSpotListByCity(city);
+		    foreach (var spot in spotList)
+		    {
+			    SendSpot(CheckedUserID,spot);
+			}
 	    }
 
+	    private static List<Spot> GetSpotListByCity(string city)
+	    {
+		    BDConnection = DBUtils.GetDBConnection();
+		    BDConnection.Open();
+
+		    string sql = "SELECT * FROM db WHERE city = \"Томск\"";
+			// объект для выполнения SQL-запроса
+		    MySqlCommand command = new MySqlCommand(sql, BDConnection);
+		    // объект для чтения ответа сервера
+		    MySqlDataReader reader = command.ExecuteReader();
+		    // читаем результат
+		    while (reader.Read())
+		    {
+			    // элементы массива [] - это значения столбцов из запроса SELECT
+			    Console.WriteLine(reader[0] + " " + reader[1]);
+		    }
+		    reader.Close(); // закрываем reader
+							// Закрыть соединение.
+			BDConnection.Close();
+			// Уничтожить объект, освободить ресурс.
+		    BDConnection.Dispose();
+			return new List<Spot>();
+		}
 
 		static VkCollection<User> GetFriends()
         {
@@ -184,5 +232,15 @@ namespace VkBot
                 Message = Body
             });
         }
-    }
+
+	    static void SendSpot(long ID, Spot spot)
+	    {
+		    vkapi.Messages.Send(new MessagesSendParams
+		    {
+			    UserId = ID,
+			    Message = spot.ToString(),
+				
+			});
+	    }
+	}
 }
