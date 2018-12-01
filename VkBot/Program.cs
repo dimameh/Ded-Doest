@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using VkNet;
 using VkNet.Enums;
 using VkNet.Enums.Filters;
@@ -121,36 +122,46 @@ namespace VkBot
 
         static void Command(long CheckedUserID, string Body)
         {
-            int CommandID = -1;
-            for (int i = 0; i < Commands.Length; i++)
+            var CommandID = -1;
+            for (var i = 0; i < Commands.Length; i++)
             {
-                if (Body.ToLower() == Commands[i])
-                {
-                    CommandID = i;
-                    break;
-                }
+	            if (Body.ToLower() != Commands[i])
+	            {
+		            continue;
+	            }
+
+	            CommandID = i;
+	            break;
             }
-            if (CommandID != -1)
-            {
-                switch (CommandID)
-                {
-					case 0:
-						SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
-						//GetMarksFromCity(city);
-						break;
-					case 1: 
-						break;
-					case 2:
-						SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
-						break;
-					default: /*Error*/ break;
-                }
-            }
+
+	        if (CommandID == -1)
+	        {
+		        return;
+	        }
+
+	        switch (CommandID)
+	        {
+		        case 0:
+			        SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
+			        GetSpotsFromCity(CheckedUserID,
+				        vkapi.Messages.GetHistory(
+					        new MessagesGetHistoryParams { UserId = CheckedUserID, Count = 5 }));
+			        break;
+		        case 1: 
+			        break;
+		        case 2:
+			        SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
+			        break;
+		        default: /*Error*/ break;
+	        }
         }
 
-	    static void GetMarksFromCity(string city)
+	    private static void GetSpotsFromCity(long CheckedUserID, MessagesGetObject dialog)
 	    {
-
+		    string city = dialog.Messages[0].Body;
+			List<Spot> spotList = new List<Spot>();
+			//TODO: заполнить список точек из БД, выбирая по нужному городу.
+			//SendMessage(CheckedUserID,);
 	    }
 
 
