@@ -1,8 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Drawing;
+using System.Linq;
 using System.Net;
+using System.Numerics;
 using System.Text;
+using AngleSharp;
 using MySql.Data.MySqlClient;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -30,6 +34,7 @@ namespace VkBot
 		    Commands
 	    }
 	    private static MySqlConnection BDConnection;
+
 		#region BD
 
 		class DBMySQLUtils
@@ -52,16 +57,15 @@ namespace VkBot
 
 		    public static MySqlConnection GetDBConnection()
 	    {
-		    string host = "192.168.205.130";
+		    string host = "tarangok.ru";
 		    int port = 3306;
-		    string database = "simplehr";
-		    string username = "root";
-		    string password = "1234";
+		    string database = "tarangok_db";
+		    string username = "tarangok";
+		    string password = "123555";
 
 		    return DBMySQLUtils.GetDBConnection(host, port, database, username, password);
 	    }
-
-    }
+	}
 
 	#endregion
 
@@ -70,7 +74,6 @@ namespace VkBot
             string Login = @"codemekh@gmail.com";
             string Password = @"rhbpbcrfgen";
             ulong ID = 6768611;
-
 			
 			/*Console.WriteLine("Montece VK bot");
             Console.Write("Login: ");
@@ -169,9 +172,9 @@ namespace VkBot
 				        vkapi.Messages.GetHistory(
 					        new MessagesGetHistoryParams { UserId = CheckedUserID, Count = 5 }));
 			        break;
-		        case (int)AveliableCommans.Share: 
-
-			        break;
+		        case (int)AveliableCommans.Share:
+			        SendMessage(CheckedUserID, "Заполните форму в следующем формате:");
+					break;
 		        case (int)AveliableCommans.Took:
 			        
 			        break;
@@ -182,35 +185,56 @@ namespace VkBot
 	    private static void GetSpotsFromCity(long CheckedUserID, MessagesGetObject dialog)
 	    {
 		    string city = dialog.Messages[0].Body;
-		    List<Spot> spotList = GetSpotListByCity(city);
-		    foreach (var spot in spotList)
+		    List<Spot> spotList = GetSpotListByCity("Томск");
+		    if (spotList == null)
 		    {
-			    SendSpot(CheckedUserID,spot);
-			}
+			    SendMessage(CheckedUserID, "К сожалению в вашем городе уже всё съедено(");
+				return;
+		    }
+		    //foreach (var spot in spotList)
+		    //{
+			    SendSpots(CheckedUserID,spotList);
+
+			//}
 	    }
 
-	    private static List<Spot> GetSpotListByCity(string city)
+	    private static List<Spot> GetSpotListByCity(string city)//!!
 	    {
 		    BDConnection = DBUtils.GetDBConnection();
-		    BDConnection.Open();
 
+			BDConnection.Open();
+		    
 		    string sql = "SELECT * FROM db WHERE city = \"Томск\"";
 			// объект для выполнения SQL-запроса
 		    MySqlCommand command = new MySqlCommand(sql, BDConnection);
 		    // объект для чтения ответа сервера
 		    MySqlDataReader reader = command.ExecuteReader();
-		    // читаем результат
-		    while (reader.Read())
+
+		    List<Spot> spotList = new List<Spot>();
+			// читаем результат
+			while (reader.Read())
 		    {
-			    // элементы массива [] - это значения столбцов из запроса SELECT
-			    Console.WriteLine(reader[0] + " " + reader[1]);
-		    }
+				// элементы массива [] - это значения столбцов из запроса SELECT
+				for (var i = 0; i < reader.FieldCount/7; i++)
+				{
+					spotList.Add(new Spot
+					{
+						Id = reader.GetInt32("id"),
+						Name = reader.GetString("name"),
+						Description = reader.GetString("data"),
+						City = reader.GetString("city"),
+						Adress = new Complex(reader.GetDouble("x"), reader.GetDouble("y")),
+						Photo = Url.Create(reader.GetString("photo"))
+					});
+				}
+
+			}
 		    reader.Close(); // закрываем reader
 							// Закрыть соединение.
 			BDConnection.Close();
 			// Уничтожить объект, освободить ресурс.
 		    BDConnection.Dispose();
-			return new List<Spot>();
+			return spotList;
 		}
 
 		static VkCollection<User> GetFriends()
@@ -233,13 +257,17 @@ namespace VkBot
             });
         }
 
-	    static void SendSpot(long ID, Spot spot)
+	    static void SendSpots(long ID, List<Spot> spotList)
 	    {
+		    string mess = String.Empty;
+		    foreach (var spot in spotList)
+		    {
+			    mess = string.Concat(mess, spot + "\n______________________________\n");
+		    }
 		    vkapi.Messages.Send(new MessagesSendParams
 		    {
 			    UserId = ID,
-			    Message = spot.ToString(),
-				
+			    Message = mess
 			});
 	    }
 	}
