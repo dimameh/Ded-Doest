@@ -1,0 +1,65 @@
+body{
+    margin: 0;
+}
+
+a{
+    color: #000 !important;
+}
+
+.svg{
+    width: 100%;
+    margin: 0 auto;
+}
+
+svg{
+    margin-left: 40%;
+}
+
+.area{
+    width: 100%;
+}
+
+.bg-red{
+    background-color: red;
+}
+
+.bg-green{
+    background-color: green;
+}
+
+.square{
+    display: block;
+    width: 300px;
+    height: 300px;
+    padding-top: 8%;
+    padding-left: 6%;
+    margin-top: 30px;
+    margin-bottom: 30px;
+    margin-left: 38%;
+}
+
+
+.post{
+    width: 100%;
+    height: 300px;
+    border: 2px solid;
+    border-color: #000;
+    margin-top: 30px;
+    margin-bottom: 30px;
+}
+
+.photo{
+    width: 100%;
+    height: 295px;
+    background-size: cover;
+}
+
+.desk{
+    margin-top: 10%;
+    list-style: none;
+}
+
+
+.desk li{
+    margin-bottom: 30px;
+}
