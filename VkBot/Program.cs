@@ -167,7 +167,6 @@ namespace VkBot
 	        switch (CommandID)
 	        {
 		        case (int)AveliableCommans.Eat:
-			        SendMessage(CheckedUserID, "Где вы находитесь? (Город)");
 			        GetSpotsFromCity(CheckedUserID,
 				        vkapi.Messages.GetHistory(
 					        new MessagesGetHistoryParams { UserId = CheckedUserID, Count = 5 }));
