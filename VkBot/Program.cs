@@ -71,8 +71,8 @@ namespace VkBot
 
 	static void Main(string[] args)
         {
-            string Login = @"codemekh@gmail.com";
-            string Password = @"rhbpbcrfgen";
+            string Login = @"логин";
+            string Password = @"пароль";
             ulong ID = 6768611;
 			
 			/*Console.WriteLine("Montece VK bot");
